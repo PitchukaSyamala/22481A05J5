@@ -1,70 +1,76 @@
+// src/components/URLShortener.js
 import React, { useState } from "react";
 
-function URLShortener() {
-  const [urls, setUrls] = useState(["", "", "", "", ""]);
-  const [shortenedUrls, setShortenedUrls] = useState(["", "", "", "", ""]);
+const URLShortener = () => {
+  const [inputFields, setInputFields] = useState([
+    { url: "", expiry: "", shortcode: "" },
+    { url: "", expiry: "", shortcode: "" },
+    { url: "", expiry: "", shortcode: "" },
+    { url: "", expiry: "", shortcode: "" },
+    { url: "", expiry: "", shortcode: "" },
+  ]);
 
-  const handleChange = (index, value) => {
-    const newUrls = [...urls];
-    newUrls[index] = value;
-    setUrls(newUrls);
+  const [shortenedURLs, setShortenedURLs] = useState([]);
+
+  const handleChange = (index, field, value) => {
+    const newFields = [...inputFields];
+    newFields[index][field] = value;
+    setInputFields(newFields);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const results = [];
+  const handleShorten = () => {
+    const generatedURLs = inputFields.map((field) => {
+      const shortCode = field.shortcode || Math.random().toString(36).substring(2, 7);
+      return {
+        originalUrl: field.url,
+        expiry: field.expiry || "N/A",
+        shortUrl: `http://short.ly/${shortCode}`,
+      };
+    });
 
-    for (let i = 0; i < urls.length; i++) {
-      const url = urls[i];
-      if (url.trim() === "") {
-        results.push("");
-        continue;
-      }
-      try {
-        const response = await fetch(`https://api.shrtco.de/v2/shorten?url=${encodeURIComponent(url)}`);
-        const data = await response.json();
-        if (data.ok) {
-          results.push(data.result.full_short_link);
-        } else {
-          results.push("Error shortening URL");
-        }
-      } catch (error) {
-        results.push("Error shortening URL");
-      }
-    }
-
-    setShortenedUrls(results);
+    setShortenedURLs(generatedURLs);
   };
 
   return (
     <div>
-      <form onSubmit={handleSubmit}>
-        {urls.map((url, index) => (
-          <input
-            key={index}
-            type="text"
-            value={url}
-            onChange={(e) => handleChange(index, e.target.value)}
-            placeholder={`Enter URL #${index + 1}`}
-          />
+      <form>
+        {inputFields.map((field, index) => (
+          <div key={index}>
+            <h3>Url Data</h3>
+            <input
+              type="text"
+              placeholder="Original URL"
+              value={field.url}
+              onChange={(e) => handleChange(index, "url", e.target.value)}
+            />
+            <input
+              type="number"
+              placeholder="Expiry (min)"
+              value={field.expiry}
+              onChange={(e) => handleChange(index, "expiry", e.target.value)}
+            />
+            <input
+              type="text"
+              placeholder="Custom Shortcode"
+              value={field.shortcode}
+              onChange={(e) => handleChange(index, "shortcode", e.target.value)}
+            />
+          </div>
         ))}
-        <button type="submit">Shorten URLs</button>
+        <button type="button" onClick={handleShorten}>SHORTEN URLS</button>
       </form>
-      <div className="shortened-urls">
-        {shortenedUrls.map((shortUrl, index) =>
-          shortUrl ? (
-            <p key={index}>
-              <strong>Original:</strong> {urls[index]}<br />
-              <strong>Shortened:</strong>{" "}
-              <a href={shortUrl} target="_blank" rel="noopener noreferrer">
-                {shortUrl}
-              </a>
-            </p>
-          ) : null
-        )}
-      </div>
+
+      <h3>Shortened URLs</h3>
+      {shortenedURLs.map((item, index) => (
+        <div key={index}>
+          <p><strong>Short URL:</strong> <a href={item.shortUrl} target="_blank" rel="noopener noreferrer">{item.shortUrl}</a></p>
+          <p><strong>Original:</strong> {item.originalUrl}</p>
+          <p><strong>Expires in:</strong> {item.expiry} min</p>
+          <hr />
+        </div>
+      ))}
     </div>
   );
-}
+};
 
 export default URLShortener;
